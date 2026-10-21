@@ -5,7 +5,7 @@
 #
 # 为什么需要它：Raycast 的每个窗口是**独立**的 HTML + 独立 JS 入口。
 #   frontend/main-window.html      启动器
-#   frontend/settings-window.html  设置（2.9 起从 main-window 拆出来）
+#   frontend/settings-window.html  设置（一直是独立页面，不在 main-window 里）
 #   frontend/ai-chat-window.html   AI 对话
 #   ...
 # 只注入 main-window 会出现「启动器汉化了、设置窗口全英文」的半吊子状态。
