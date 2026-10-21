@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 构建
+        run: npm run build
+
+      - name: 检查 dist 与 src 是否同步
+        run: |
+          if ! git diff --quiet -- dist/; then
+            echo "::error::dist/ 与 src/ 不一致，请本地执行 npm run build 并提交产物"
+            git diff --stat -- dist/
+            exit 1
+          fi
+
+      - name: 测试
+        run: npm test
+
+# 说明：L8（真实语料）与 L9（部署一致性）需要本机安装 Raycast，
+# 在 CI 里会自动跳过，其余 7 层照常执行。

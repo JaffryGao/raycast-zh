@@ -1,0 +1,21 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 依赖
+node_modules/
+
+# 临时文件
+*.log
+*.tmp
+*.bak
+*~
+
+# 本地调试
+.vscode/
+.idea/
+
+# 注意：dist/ 必须提交。
+# 它让没装 Node.js 的用户可以直接 ./scripts/install.sh，
+# 也让 npm run status 能比对「已装版本 vs 源码版本」。

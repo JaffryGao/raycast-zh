@@ -1,0 +1,20 @@
+{
+  "name": "raycast-zh",
+  "version": "1.0.0",
+  "description": "Raycast 简体中文界面层：不修改二进制，在渲染层精确匹配翻译，并让中文搜索命中英文索引。",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node tests/test-suite.js",
+    "deploy": "bash scripts/install.sh",
+    "undeploy": "bash scripts/uninstall.sh",
+    "status": "bash scripts/status.sh"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "os": [
+    "darwin"
+  ]
+}
