@@ -485,50 +485,169 @@ if (enabled("L8")) {
   if (!FE || !fs.existsSync(FE)) {
     skipped("语料覆盖检查", "未能定位 Raycast 前端目录");
   } else {
-    const env = makeEnv();
-    const lookupAll = (list) => env.run(
-      `(function(list){var out=[];for(var i=0;i<list.length;i++)out.push(__rcZhLookup(list[i]));return out;})(${JSON.stringify(list)})`
-    );
+      const env = makeEnv();
+      const lookupAll = (list) => env.run(
+        `(function(list){var out=[];for(var i=0;i<list.length;i++)out.push(__rcZhLookup(list[i]));return out;})(${JSON.stringify(list)})`
+      );
 
-    const settingsFiles = fs.readdirSync(FE).filter(f => /settings-page-definition.*\.js$/.test(f)).map(f => path.join(FE, f));
-    const settingsVals = extract(settingsFiles, 120);
-    const settingsRes = lookupAll(settingsVals);
-    const settingsMiss = settingsVals.filter((v, i) => settingsRes[i] === null);
+      const settingsFiles = fs.readdirSync(FE).filter(f => /settings-page-definition.*\.js$/.test(f)).map(f => path.join(FE, f));
+      const settingsVals = extract(settingsFiles, 120);
+      const settingsRes = lookupAll(settingsVals);
+      const settingsMiss = settingsVals.filter((v, i) => settingsRes[i] === null);
 
-    ok(settingsVals.length > 200, "设置页语料规模正常", settingsVals.length + " 条");
-    ok(settingsMiss.length === 0, "设置页语料 100% 命中（词典合并的回归闸门）",
-      settingsMiss.length ? settingsMiss.length + " 条缺失，例如：" + JSON.stringify(settingsMiss.slice(0, 3)) : "");
+      ok(settingsVals.length > 200, "设置页语料规模正常", settingsVals.length + " 条");
+      ok(settingsMiss.length === 0, "设置页语料 100% 命中（词典合并的回归闸门）",
+        settingsMiss.length ? settingsMiss.length + " 条缺失，例如：" + JSON.stringify(settingsMiss.slice(0, 3)) : "");
 
-    // 全量语料：只做「不低于基线」的防退化检查。
-    // 长句仍有未翻译的（AI 对话、欢迎页等），这里不假装它们已经做完。
-    const allFiles = fs.readdirSync(FE).filter(f => /\.js$/.test(f)).map(f => path.join(FE, f));
-    const allVals = extract(allFiles, 120);
-    const allRes = lookupAll(allVals);
-    const allMiss = allVals.filter((v, i) => allRes[i] === null);
-    const cov = (allVals.length - allMiss.length) / Math.max(1, allVals.length);
-    const pct = (cov * 100).toFixed(2);
+      // 设置窗口自 2.9 起是独立页面（settings-window.html + 自己的 JS 入口），
+      // 文案不在 settings-page-definition 里。上面的检查过不了这一关：
+      // 词典齐全但页面没被注入，用户看到的仍然是全英文设置界面。
+      const winFiles = fs.readdirSync(FE).filter(f => /^settings-window-.*\.js$/.test(f)).map(f => path.join(FE, f));
+      const winVals = extract(winFiles, 120);
+      const winRes = lookupAll(winVals);
+      const winMiss = winVals.filter((v, i) => winRes[i] === null);
+      ok(winVals.length > 40, "设置窗口（独立页面）语料规模正常", winVals.length + " 条");
+      ok(winMiss.length === 0, "设置窗口语料 100% 命中（否则设置页会留英文）",
+        winMiss.length ? winMiss.length + " 条缺失，例如：" + JSON.stringify(winMiss.slice(0, 3)) : "");
 
-    ok(cov >= 0.68, "全量语料覆盖率不低于基线 68%", pct + "%（" + allMiss.length + "/" + allVals.length + " 未译）");
-    console.log("      ℹ 全量覆盖率 " + pct + "%（统计口径：title/description/label 等 UI 字段，≤120 字符）");
+      // 全量语料：只做「不低于基线」的防退化检查。
+      // 长句仍有未翻译的（AI 对话、欢迎页等），这里不假装它们已经做完。
+      const allFiles = fs.readdirSync(FE).filter(f => /\.js$/.test(f)).map(f => path.join(FE, f));
+      const allVals = extract(allFiles, 120);
+      const allRes = lookupAll(allVals);
+      const allMiss = allVals.filter((v, i) => allRes[i] === null);
+      const cov = (allVals.length - allMiss.length) / Math.max(1, allVals.length);
+      const pct = (cov * 100).toFixed(2);
+
+      ok(cov >= 0.68, "全量语料覆盖率不低于基线 68%", pct + "%（" + allMiss.length + "/" + allVals.length + " 未译）");
+      console.log("      ℹ 全量覆盖率 " + pct + "%（统计口径：title/description/label 等 UI 字段，≤120 字符）");
+    }
   }
-}
 
-/* ══════════════════════════ L9 部署一致性 ══════════════════════════ */
+  /* ══════════════════════════ L9 部署一致性 ══════════════════════════ */
 
-if (enabled("L9")) {
-  group("L9 · 部署一致性（测的就是在跑的）");
-  const deployed = FE ? path.join(FE, "raycast-zh.js") : "";
-  if (!FE) {
-    skipped("部署一致性", "未能定位 Raycast 前端目录");
-  } else if (process.env.RC_SRC) {
-    skipped("部署一致性", "当前测的是变体文件（RC_SRC）");
-  } else if (!fs.existsSync(deployed)) {
-    skipped("部署一致性", "未部署到 Raycast 应用目录");
-  } else {
-    const md5 = (p) => crypto.createHash("md5").update(fs.readFileSync(p)).digest("hex");
-    const a = md5(SRC), b = md5(deployed);
-    eq(b, a, "应用目录里的脚本与源文件字节一致");
-    ok(fs.statSync(deployed).size > 100000, "部署文件大小合理", fs.statSync(deployed).size + " 字节");
+  if (enabled("L9")) {
+    group("L9 · 部署一致性（测的就是在跑的）");
+    const deployed = FE ? path.join(FE, "raycast-zh.js") : "";
+    if (!FE) {
+      skipped("部署一致性", "未能定位 Raycast 前端目录");
+    } else if (process.env.RC_SRC) {
+      skipped("部署一致性", "当前测的是变体文件（RC_SRC）");
+    } else if (!fs.existsSync(deployed)) {
+      skipped("部署一致性", "未部署到 Raycast 应用目录");
+    } else {
+      const md5 = (p) => crypto.createHash("md5").update(fs.readFileSync(p)).digest("hex");
+      const a = md5(SRC), b = md5(deployed);
+      eq(b, a, "应用目录里的脚本与源文件字节一致");
+      ok(fs.statSync(deployed).size > 100000, "部署文件大小合理", fs.statSync(deployed).size + " 字节");
+    }
+  }
+
+  /* ══════════════════════ L10 多窗口安装闭环 ══════════════════════ */
+
+  if (enabled("L10")) {
+    group("L10 · 多窗口安装闭环（造一个假 Raycast，真跑脚本）");
+
+    if (process.platform !== "darwin") {
+      skipped("多窗口安装闭环", "install.sh 只在 macOS 上执行");
+    } else {
+
+    const os = require("os");
+    const { execFileSync } = require("child_process");
+    const ROOT_DIR = path.join(__dirname, "..");
+
+    // 假 app：结构照抄真实 Raycast，只是页面内容换成占位符。
+    // 这里刻意放三个窗口——旧版脚本只会注入 main-window，
+    // 这条用例就是那次「设置窗口全英文」事故的复现装置。
+    const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "rc-zh-"));
+    const APP_DIR = path.join(TMP, "Raycast.app");
+    const FE_DIR = path.join(APP_DIR, "Contents", "Resources", "macos-app_Test.bundle", "Contents", "Resources", "frontend");
+    const HOME_DIR = path.join(TMP, "home");
+    fs.mkdirSync(FE_DIR, { recursive: true });
+    fs.mkdirSync(HOME_DIR, { recursive: true });
+
+    fs.writeFileSync(path.join(APP_DIR, "Contents", "Info.plist"), [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
+      '<plist version="1.0"><dict>',
+      '<key>CFBundleShortVersionString</key><string>9.9.9-test</string>',
+      '</dict></plist>'
+    ].join("\n"));
+
+    const PAGE_NAMES = ["main-window.html", "settings-window.html", "notes-window.html"];
+    const page = (label) => `<!doctype html>\n<html><head><title>Raycast</title></head>\n<body><div>${label}</div></body>\n</html>\n`;
+    for (const n of PAGE_NAMES) fs.writeFileSync(path.join(FE_DIR, n), page(n));
+    // 没有 </body> 的文件不该被动：注入点不存在，硬插会破坏它。
+    fs.writeFileSync(path.join(FE_DIR, "auxiliary-prewarm.html"), "<html><head></head></html>\n");
+
+    const readPage = (n) => fs.readFileSync(path.join(FE_DIR, n), "utf8");
+    const countOf = (s, sub) => s.split(sub).length - 1;
+    const runScript = (name, extra) => execFileSync("/bin/bash", [path.join(ROOT_DIR, "scripts", name), "--no-restart", "--app", APP_DIR].concat(extra || []), {
+      encoding: "utf8",
+      env: Object.assign({}, process.env, { HOME: HOME_DIR }),
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+
+    let installOut = "";
+    try {
+      installOut = runScript("install.sh");
+      ok(true, "install.sh 在假 app 上执行成功");
+    } catch (e) {
+      ok(false, "install.sh 在假 app 上执行成功", String(e.stderr || e.message).slice(0, 300));
+    }
+
+    for (const n of PAGE_NAMES) {
+      const html = readPage(n);
+      ok(html.includes("raycast-zh:begin"), `${n} 已注入`);
+      eq(countOf(html, '<script src="./raycast-zh.js"></script>'), 1, `${n} 只注入一次（hook 不会叠加）`);
+    }
+
+    const prewarm = readPage("auxiliary-prewarm.html");
+    ok(!prewarm.includes("raycast-zh"), "没有 </body> 的页面被跳过，未被破坏");
+    ok(fs.existsSync(path.join(FE_DIR, "raycast-zh.js")), "脚本本体已部署到 frontend");
+    ok(/3\/3|3 个窗口/.test(installOut), "安装输出报告了 3 个窗口", installOut.split("\n").filter(l => /窗口/.test(l))[0] || "");
+
+    // 幂等：再跑一次，每个页面仍然只有一个 script 标签
+    try {
+      const again = runScript("install.sh");
+      ok(true, "重复执行 install.sh 成功");
+      for (const n of PAGE_NAMES) {
+        eq(countOf(readPage(n), '<script src="./raycast-zh.js"></script>'), 1, `重复安装后 ${n} 仍只有一个脚本标签`);
+      }
+      ok(/已是最新/.test(again), "重复安装被识别为「已是最新」");
+    } catch (e) {
+      ok(false, "重复执行 install.sh 成功", String(e.stderr || e.message).slice(0, 300));
+    }
+
+    // 旧版留下的裸标签（没有 begin/end 标记）要能升级成带标记的块，
+    // 否则从老版本升上来的用户会带着两份脚本跑。
+    const legacy = page("settings").replace("</body>", '<script src="./raycast-zh.js"></script>\n</body>');
+    fs.writeFileSync(path.join(FE_DIR, "settings-window.html"), legacy);
+    try {
+      runScript("install.sh");
+      const html = readPage("settings-window.html");
+      eq(countOf(html, '<script src="./raycast-zh.js"></script>'), 1, "旧版裸标签被替换，不会双份执行");
+      ok(html.includes("raycast-zh:begin"), "旧版裸标签升级为带标记的注入");
+    } catch (e) {
+      ok(false, "旧版裸标签升级", String(e.stderr || e.message).slice(0, 300));
+    }
+
+    // 卸载：三个窗口都要摘干净
+    try {
+      runScript("uninstall.sh");
+      for (const n of PAGE_NAMES) {
+        ok(!readPage(n).includes("raycast-zh"), `卸载后 ${n} 不含任何注入痕迹`);
+        ok(readPage(n).includes("</body>"), `卸载后 ${n} 结构完整`);
+      }
+      ok(!fs.existsSync(path.join(FE_DIR, "raycast-zh.js")), "卸载后脚本本体被删除");
+      ok(!fs.existsSync(path.join(HOME_DIR, ".raycast-zh", "state.env")), "卸载后状态记录被清除");
+    } catch (e) {
+      ok(false, "uninstall.sh 在假 app 上执行成功", String(e.stderr || e.message).slice(0, 300));
+    }
+
+    try {
+      fs.rmSync(TMP, { recursive: true, force: true });
+    } catch (e) {}
   }
 }
 

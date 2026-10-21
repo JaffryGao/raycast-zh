@@ -9,20 +9,24 @@
 # 设计要点：
 #   1. 幂等——先摘掉旧注入再插新的，重复执行不会叠加；
 #   2. 定位靠 main-window.html 这个锚点，不写死内部 bundle 名；
-#   3. 只改 HTML 里的一行注入 + 新增一个脚本文件，卸载即完全还原。
+#   3. 注入覆盖 frontend 下**所有**窗口页面（启动器、设置、AI 对话…），
+#      Raycast 把设置窗口拆成独立页面后，只注入 main-window 会让设置全英文；
+#   4. 只改 HTML 里的一段注入 + 新增一个脚本文件，卸载即完全还原。
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/inject.sh
+. "$ROOT/scripts/lib/inject.sh"
+
 STATE_DIR="${HOME}/.raycast-zh"
 STATE_FILE="${STATE_DIR}/state.env"
-BEGIN_MARK="<!-- raycast-zh:begin -->"
-END_MARK="<!-- raycast-zh:end -->"
-SCRIPT_NAME="raycast-zh.js"
+SCRIPT_NAME="$RC_SCRIPT_NAME"
+BEGIN_MARK="$RC_BEGIN_MARK"
+END_MARK="$RC_END_MARK"
 
 APP="${RAYCAST_APP:-/Applications/Raycast.app}"
 RESTART=1
-VERBOSE=0
 
 c_reset=$'\033[0m'; c_dim=$'\033[2m'; c_green=$'\033[32m'; c_yellow=$'\033[33m'; c_red=$'\033[31m'
 if [ ! -t 1 ]; then c_reset=""; c_dim=""; c_green=""; c_yellow=""; c_red=""; fi
@@ -37,8 +41,8 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --no-restart) RESTART=0; shift ;;
     --app) APP="${2:-}"; [ -n "$APP" ] || die "--app 需要一个路径"; shift 2 ;;
-    --verbose|-v) VERBOSE=1; shift ;;
-    -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --verbose|-v) shift ;;
+    -h|--help) sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "未知参数：$1（用 --help 查看用法）" ;;
   esac
 done
@@ -65,12 +69,19 @@ fi
 [ -n "$FRONTEND" ] || die "在 $APP 里找不到前端目录（main-window.html）。
   Raycast 可能改了内部结构，请提 issue 并附上版本号：$VERSION"
 
-HTML="$FRONTEND/main-window.html"
+# 所有窗口页面。少注入一个，那个窗口就还是英文。
+HTMLS=()
+while IFS= read -r h; do HTMLS+=("$h"); done < <(rc_window_htmls "$FRONTEND")
+[ "${#HTMLS[@]}" -gt 0 ] || die "在 $FRONTEND 里找不到任何可注入的页面（没有 </body>）。
+  Raycast 可能改了内部结构，请提 issue 并附上版本号：$VERSION"
+
 PROD="$ROOT/dist/$SCRIPT_NAME"
+WINDOW_NAMES="$(basename -a "${HTMLS[@]}" | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
 
 step "Raycast $VERSION"
 say "  ${c_dim}app      $APP${c_reset}"
 say "  ${c_dim}frontend $FRONTEND${c_reset}"
+say "  ${c_dim}窗口     ${#HTMLS[@]} 个（${WINDOW_NAMES}）${c_reset}"
 
 # ── 2. 准备产物 ────────────────────────────────────────────────────
 if [ ! -f "$PROD" ]; then
@@ -84,8 +95,12 @@ if [ ! -f "$PROD" ]; then
 fi
 
 # ── 3. 写入权限 ────────────────────────────────────────────────────
+NEED_WRITE=0
+[ -w "$FRONTEND" ] || NEED_WRITE=1
+for h in "${HTMLS[@]}"; do [ -w "$h" ] || NEED_WRITE=1; done
+
 SUDO=""
-if [ ! -w "$HTML" ] || [ ! -w "$FRONTEND" ]; then
+if [ "$NEED_WRITE" -eq 1 ]; then
   if [ -t 0 ]; then
     warn "需要管理员权限写入 ${APP}（可能会提示输入密码）"
     SUDO="sudo"
@@ -94,39 +109,39 @@ if [ ! -w "$HTML" ] || [ ! -w "$FRONTEND" ]; then
   fi
 fi
 
-# ── 4. 注入（幂等）──────────────────────────────────────────────────
+# ── 4. 注入（幂等，逐窗口）────────────────────────────────────────
 TMP_BLOCK="$(mktemp)"
 TMP_HTML="$(mktemp)"
 trap 'rm -f "$TMP_BLOCK" "$TMP_HTML"' EXIT
+rc_write_block "$TMP_BLOCK"
 
-cat > "$TMP_BLOCK" <<HTMLBLOCK
-$BEGIN_MARK
-<script src="./$SCRIPT_NAME"></script>
-$END_MARK
-HTMLBLOCK
-
-# 第一个文件提供注入块；第二个文件里先剔除旧注入，再在 </body> 前插入。
-# 除了本脚本带标记的块，也清掉早期版本留下的裸 <script> 标签——否则重复
-# 引入会让脚本执行两次，hook 被叠加。
-awk '
-  FNR == NR { block = block $0 ORS; next }
-  $0 == "<!-- raycast-zh:begin -->" { skip = 1; next }
-  $0 == "<!-- raycast-zh:end -->"   { skip = 0; next }
-  skip { next }
-  index($0, "<script src=\"./raycast-zh.js\"></script>") > 0 { next }
-  /<\/body>/ && !done { printf "%s", block; done = 1 }
-  { print }
-' "$TMP_BLOCK" "$HTML" > "$TMP_HTML"
-
-grep -q "raycast-zh:begin" "$TMP_HTML" || die "注入失败：$HTML 里找不到 </body>，无法插入脚本标签。
+CHANGED=0
+for html in "${HTMLS[@]}"; do
+  base="$(basename "$html")"
+  rc=0
+  rc_inject_html "$html" "$TMP_BLOCK" "$TMP_HTML" || rc=$?
+  case "$rc" in
+    0)
+      $SUDO cp "$TMP_HTML" "$html"
+      $SUDO chmod 644 "$html" 2>/dev/null || true
+      good "已注入 $base"
+      CHANGED=$((CHANGED + 1))
+      ;;
+    1)
+      say "  ${c_dim}· $base 已是最新${c_reset}"
+      ;;
+    *)
+      die "注入失败：$base 里找不到 </body>，无法插入脚本标签。
 
 如果 Raycast 刚升级过，可能是页面结构变了，请提 issue 并附上版本号：$VERSION"
+      ;;
+  esac
+done
 
-if cmp -s "$TMP_HTML" "$HTML"; then
-  good "注入已是最新，无需改动 HTML"
+if [ "$CHANGED" -eq 0 ]; then
+  good "全部 ${#HTMLS[@]} 个窗口已是最新，无需改动 HTML"
 else
-  $SUDO cp "$TMP_HTML" "$HTML"
-  good "已注入启动脚本到 main-window.html"
+  good "注入完成：${CHANGED}/${#HTMLS[@]} 个窗口有改动"
 fi
 
 # ── 5. 部署脚本本体 ────────────────────────────────────────────────
@@ -141,6 +156,7 @@ cat > "$STATE_FILE" <<STATE
 VERSION=$VERSION
 APP=$APP
 FRONTEND=$FRONTEND
+WINDOWS=${#HTMLS[@]}
 SCRIPT_MD5=$MD5
 INSTALLED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 STATE
@@ -163,5 +179,5 @@ else
 fi
 
 say ""
-good "汉化完成。按你的快捷键唤起 Raycast 试试：设置 / 剪贴 / 专注 / 截图"
+good "汉化完成。按你的快捷键唤起 Raycast 试试：启动器 / 设置 / 剪贴 / 专注 / 截图"
 say "  ${c_dim}排查：npm run status    卸载：npm run undeploy${c_reset}"

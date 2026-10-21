@@ -1,4 +1,4 @@
-/*! raycast-zh v1.0.0 | MIT | 构建产物，请勿直接编辑（源码见 src/） */
+/*! raycast-zh v1.1.0 | MIT | 构建产物，请勿直接编辑（源码见 src/） */
 /* Raycast 简体中文界面层 —— 由 WorkBuddy 生成
  * 原理：Raycast 的界面是 WKWebView 里的 React 前端，文案硬编码在 JS chunk 中。
  * 本脚本在 DOM 层做精确匹配替换，不触碰任何业务逻辑与字符串常量。

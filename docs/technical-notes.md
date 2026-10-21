@@ -3,18 +3,23 @@
 记录实现过程中确认过的事实，方便 Raycast 大版本升级后快速定位问题。
 下面每一条都是通过读打包后的 chunk 或实际实验验证的，不是推测。
 
-## 1. 界面结构
+## 1. 窗口与页面
 
-启动器由 `main-window.html` 加载，里面是一堆 ES module chunk。关键文件：
+每个窗口是**独立的 HTML 文档 + 独立的 JS 入口**，WebView 之间不共享 JS 上下文：
 
-| 文件 | 作用 |
-| --- | --- |
-| `main-window-*.js` | 主窗口、搜索状态、按键处理 |
-| `root-search-*.js` | 根搜索输入与渲染 |
-| `settings-window-*.js` | 设置窗口（另一套匹配实现） |
-| `menu.namespace-*.js` | 命令菜单、模糊匹配打分 |
+| HTML | 窗口 | 入口 chunk |
+| --- | --- | --- |
+| `main-window.html` | 启动器 | `main-window-*.js` |
+| `settings-window.html` | 设置 / 偏好设置 | `settings-window-*.js` |
+| `ai-chat-window.html` | AI 对话 | `ai-chat-window-*.js` |
+| `notes-window.html` | 笔记 | `notes-window-*.js` |
+| `theme-studio-window.html` | 主题工作室 | `theme-studio-window-*.js` |
 
-注入点是 `main-window.html` 的 `</body>` 前。**只有这一个 HTML 需要改**，`settings-window.html` 等页面的初始化由主窗口驱动，同一个脚本会覆盖到。
+**踩过的坑**：一度以为「设置窗口的初始化由主窗口驱动，注入 main-window 就够」。实际上设置窗口早已是独立页面（2.8.x 就如此），`main-window.html` 里的注入对它完全不可见，表现就是启动器中文、设置全英文。
+
+所以注入必须逐窗口做：遍历 `frontend/*.html`，凡是有 `</body>` 的都插一段。新增窗口（Raycast 以后再加）也会被自动覆盖，不用改脚本。
+
+`menu.namespace-*.js` 是命令菜单与模糊匹配打分，被多个窗口共享。
 
 ## 2. 两套搜索匹配（最容易踩空的地方）
 

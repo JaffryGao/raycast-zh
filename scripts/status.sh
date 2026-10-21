@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# 体检：Raycast 是否已汉化、是否需要重新安装。
+# 体检：Raycast 是否已汉化、是否有窗口漏注入、是否需要重新安装。
 # Raycast 升级后先跑这个，再决定要不要 `npm run deploy`。
 #
 #   ./scripts/status.sh
@@ -9,8 +9,11 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/inject.sh
+. "$ROOT/scripts/lib/inject.sh"
+
 STATE_FILE="${HOME}/.raycast-zh/state.env"
-SCRIPT_NAME="raycast-zh.js"
+SCRIPT_NAME="$RC_SCRIPT_NAME"
 
 APP="${RAYCAST_APP:-/Applications/Raycast.app}"
 
@@ -53,19 +56,35 @@ if [ -z "$FRONTEND" ]; then
   bad "定位不到前端目录，Raycast 结构可能变了"
   exit 1
 fi
-HTML="$FRONTEND/main-window.html"
 
 printf '\n'
 
-# ── 注入状态 ───────────────────────────────────────────────────────
+# ── 窗口注入状态 ───────────────────────────────────────────────────
+HTMLS=()
+while IFS= read -r h; do HTMLS+=("$h"); done < <(rc_window_htmls "$FRONTEND")
+
 INJECTED=0
-INJECT_LINE=""
-if grep -q "raycast-zh" "$HTML"; then
-  INJECTED=1
-  INJECT_LINE="$(grep -o 'src="[^"]*raycast-zh[^"]*"' "$HTML" | head -1)"
-  ok "HTML 已注入         ${c_dim}${INJECT_LINE}${c_reset}"
+MISSING=""
+for html in "${HTMLS[@]}"; do
+  if rc_is_injected "$html"; then
+    INJECTED=$((INJECTED + 1))
+  else
+    MISSING="$MISSING $(basename "$html")"
+  fi
+done
+
+TOTAL="${#HTMLS[@]}"
+if [ "$TOTAL" -eq 0 ]; then
+  bad "找不到任何窗口页面（Raycast 结构可能变了）"
+  exit 1
+fi
+
+if [ "$INJECTED" -eq "$TOTAL" ]; then
+  ok "窗口已注入         ${c_dim}${INJECTED}/${TOTAL}${c_reset}"
 else
-  bad "HTML 未注入"
+  bad "窗口注入不全       ${c_dim}${INJECTED}/${TOTAL}${c_reset}"
+  printf '  %s未注入：%s%s\n' "$c_dim" "${MISSING# }" "$c_reset"
+  printf '  %s设置窗口通常是 settings-window.html——只注入 main-window 会让它保持英文%s\n' "$c_dim" "$c_reset"
 fi
 
 # ── 脚本文件 ───────────────────────────────────────────────────────
@@ -113,12 +132,15 @@ fi
 
 # ── 结论 ───────────────────────────────────────────────────────────
 printf '\n'
-if [ "$INJECTED" -eq 1 ] && [ -n "$INSTALLED_MD5" ] && [ -f "$DIST" ] && [ "$INSTALLED_MD5" = "$(md5 -q "$DIST")" ]; then
+if [ "$INJECTED" -eq "$TOTAL" ] && [ -n "$INSTALLED_MD5" ] && [ -f "$DIST" ] && [ "$INSTALLED_MD5" = "$(md5 -q "$DIST")" ]; then
   printf '%s✓ 当前状态：已汉化且与源码同步%s\n' "$c_green" "$c_reset"
   exit 0
-elif [ "$INJECTED" -eq 1 ]; then
+elif [ "$INJECTED" -eq "$TOTAL" ]; then
   printf '%s! 当前状态：已汉化，但版本可能落后（npm run deploy 更新）%s\n' "$c_yellow" "$c_reset"
   exit 0
+elif [ "$INJECTED" -gt 0 ]; then
+  printf '%s! 当前状态：部分窗口未汉化（npm run deploy 补齐）%s\n' "$c_yellow" "$c_reset"
+  exit 1
 else
   printf '%s✗ 当前状态：未汉化（npm run deploy 安装）%s\n' "$c_red" "$c_reset"
   exit 1

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# 完全卸载：摘掉 HTML 里的注入、删除脚本文件，让 Raycast 回到原样。
+# 完全卸载：摘掉各窗口 HTML 里的注入、删除脚本文件，让 Raycast 回到原样。
 #
 #   ./scripts/uninstall.sh               卸载并重启 Raycast
 #   ./scripts/uninstall.sh --no-restart  只卸载，不重启
@@ -11,9 +11,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/inject.sh
+. "$ROOT/scripts/lib/inject.sh"
+
 STATE_DIR="${HOME}/.raycast-zh"
 STATE_FILE="${STATE_DIR}/state.env"
-SCRIPT_NAME="raycast-zh.js"
+SCRIPT_NAME="$RC_SCRIPT_NAME"
 
 APP="${RAYCAST_APP:-/Applications/Raycast.app}"
 RESTART=1
@@ -30,7 +33,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --no-restart) RESTART=0; shift ;;
     --app) APP="${2:-}"; [ -n "$APP" ] || die "--app 需要一个路径"; shift 2 ;;
-    -h|--help) sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "未知参数：$1" ;;
   esac
 done
@@ -52,10 +55,17 @@ if [ -z "$FRONTEND" ] && [ -f "$RES/frontend/main-window.html" ]; then
 fi
 [ -n "$FRONTEND" ] || die "在 $APP 里找不到前端目录，可能已经卸载过或 Raycast 结构有变。"
 
-HTML="$FRONTEND/main-window.html"
+# 收集所有可能有注入的页面（含旧版只注了 main-window 的机器）
+HTMLS=()
+while IFS= read -r h; do HTMLS+=("$h"); done < <(rc_window_htmls "$FRONTEND")
 
 SUDO=""
-if [ ! -w "$HTML" ] || [ ! -w "$FRONTEND" ]; then
+NEED_WRITE=0
+[ -w "$FRONTEND" ] || NEED_WRITE=1
+for h in "${HTMLS[@]}"; do [ -w "$h" ] || NEED_WRITE=1; done
+[ -f "$FRONTEND/$SCRIPT_NAME" ] && [ ! -w "$FRONTEND/$SCRIPT_NAME" ] && NEED_WRITE=1
+
+if [ "$NEED_WRITE" -eq 1 ]; then
   if [ -t 0 ]; then
     warn "需要管理员权限写入 ${APP}（可能会提示输入密码）"
     SUDO="sudo"
@@ -64,21 +74,23 @@ if [ ! -w "$HTML" ] || [ ! -w "$FRONTEND" ]; then
   fi
 fi
 
-# ── 1. 摘掉注入 ────────────────────────────────────────────────────
-if grep -q "raycast-zh" "$HTML"; then
-  TMP_HTML="$(mktemp)"
-  trap 'rm -f "$TMP_HTML"' EXIT
-  awk '
-    $0 == "<!-- raycast-zh:begin -->" { skip = 1; next }
-    $0 == "<!-- raycast-zh:end -->"   { skip = 0; next }
-    skip { next }
-    index($0, "<script src=\"./raycast-zh.js\"></script>") > 0 { next }
-    { print }
-  ' "$HTML" > "$TMP_HTML"
-  $SUDO cp "$TMP_HTML" "$HTML"
-  good "已从 main-window.html 移除注入"
-else
-  warn "main-window.html 里没有注入记录（可能已被 Raycast 升级覆盖）"
+# ── 1. 逐个窗口摘掉注入 ────────────────────────────────────────────
+TMP_HTML="$(mktemp)"
+trap 'rm -f "$TMP_HTML"' EXIT
+
+REMOVED=0
+for html in "${HTMLS[@]}"; do
+  base="$(basename "$html")"
+  if rc_strip_html "$html" "$TMP_HTML"; then
+    $SUDO cp "$TMP_HTML" "$html"
+    $SUDO chmod 644 "$html" 2>/dev/null || true
+    good "已从 $base 移除注入"
+    REMOVED=$((REMOVED + 1))
+  fi
+done
+
+if [ "$REMOVED" -eq 0 ]; then
+  warn "没有任何页面存在注入记录（可能已被 Raycast 升级覆盖）"
 fi
 
 # ── 2. 删除脚本本体 ────────────────────────────────────────────────
