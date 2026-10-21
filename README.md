@@ -41,7 +41,7 @@ npm run deploy
 | `npm test` | 分层测试（101 条断言，含真实语料覆盖率闸门） |
 | `npm run build` | 改完词典后重新构建 `dist/` |
 
-脚本都支持 `--no-restart`（不重启 Raycast）和 `--app <路径>`（Raycast 不在默认位置时）。
+`install.sh` 和 `uninstall.sh` 支持 `--no-restart`（不重启 Raycast）；三个脚本都支持 `--app <路径>`（Raycast 不在默认位置时）。
 
 ## Raycast 升级之后
 
