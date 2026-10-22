@@ -1,10 +1,14 @@
-# Raycast 简体中文汉化
+<h1 align="center"><a id="zh"></a>Raycast 简体中文汉化</h1>
 
-**简体中文** ｜ [English](#english)
+<p align="center"><em>让每一次 ⌘ Space，都落在母语里。</em></p>
 
-给 [Raycast](https://raycast.com) 加一层中文界面：不改二进制、不碰业务逻辑，中文搜索也能命中它原本的英文索引。
+<p align="center">
+  <a href="#english">English</a> ｜ 简体中文
+</p>
 
-<table>
+<p align="center">给 <a href="https://raycast.com">Raycast</a> 加一层中文界面：不改二进制、不碰业务逻辑，中文搜索也能命中它原本的英文索引。</p>
+
+<table align="center">
   <tr>
     <td width="50%"><img src="docs/images/launcher.png" alt="中文启动器：输入「剪贴」直接搜到剪贴板命令" width="100%"></td>
     <td width="50%" align="center"><img src="docs/images/settings.png" alt="中文设置窗口" width="66%"></td>
@@ -15,9 +19,9 @@
   </tr>
 </table>
 
-> 非官方项目，原理见[实现原理](#实现原理)。
+<p align="center"><sub>非官方项目 · 原理见 <a href="#实现原理">实现原理</a></sub></p>
 
-## 特性
+<h2 align="center"><a id="特性"></a>特性</h2>
 
 - **界面汉化**：约 4000 条精确匹配文案，覆盖启动器、设置、侧栏、空状态与占位符
 - **中文搜索**：输入「设置 / 剪贴 / 专注 / 截图」，命中对应的英文命令
@@ -25,11 +29,11 @@
 - **未命中即原样**：不认识的文本保持英文，不会破坏文件名或你的 Quicklink 标题
 - **可一键还原**：`npm run undeploy` 完全回到原样；升级后重跑 `npm run deploy` 即恢复
 
-## 环境要求
+<h2 align="center"><a id="环境要求"></a>环境要求</h2>
 
-macOS · Raycast（实测 2.8.2.0）· Node.js ≥ 16（可选，只用安装脚本则不需要）
+<p align="center">macOS · Raycast（实测 2.8.2.0）· Node.js ≥ 16（可选，只用安装脚本则不需要）</p>
 
-## 快速开始
+<h2 align="center"><a id="快速开始"></a>快速开始</h2>
 
 ```bash
 git clone https://github.com/JaffryGao/raycast-zh.git
@@ -45,7 +49,7 @@ npm run deploy
 
 脚本会找到 Raycast 的 `frontend/` 目录，注入所有窗口页面，然后重启 Raycast。唤起后输入 `设置`、`剪贴` 试试。
 
-## 常用命令
+<h2 align="center"><a id="常用命令"></a>常用命令</h2>
 
 | 命令 | 作用 |
 | --- | --- |
@@ -57,7 +61,7 @@ npm run deploy
 
 `install.sh` / `uninstall.sh` 支持 `--no-restart`；三个脚本都支持 `--app <路径>`。
 
-## Raycast 升级之后
+<h2 align="center"><a id="raycast-升级之后"></a>Raycast 升级之后</h2>
 
 升级会整体替换 app bundle，注入随之消失。每次升级后跑一次：
 
@@ -69,7 +73,7 @@ npm run deploy
 
 > 若自动更新因 bundle 被改动而失败，从[官网](https://raycast.com)覆盖安装后再执行一次即可。
 
-## 只汉化了一半？
+<h2 align="center"><a id="只汉化了一半"></a>只汉化了一半？</h2>
 
 Raycast 每个窗口都是**独立的 HTML + 独立 JS 入口**（启动器、设置、AI 对话、笔记……）。只注入 `main-window.html` 会导致「启动器中文、设置全英文」。当前版本会遍历 `frontend/*.html`，并自动覆盖以后新增的窗口。
 
@@ -80,7 +84,7 @@ $ npm run status
 
 显示 `8/9` 时直接 `npm run deploy` 补齐，无需先卸载。
 
-## 实现原理
+<h2 align="center"><a id="实现原理"></a>实现原理</h2>
 
 **1. 渲染层翻译**：扫描 DOM 文本节点和 `placeholder` / `title` / `aria-label` / `alt` / `data-tooltip`，精确匹配词典后替换。跳过输入框、`contentEditable`、`CODE`、`SVG`，`MutationObserver` 负责补译 React 新渲染的节点。
 
@@ -90,7 +94,7 @@ $ npm run status
 
 更多逆向细节见 [`docs/technical-notes.md`](docs/technical-notes.md)。
 
-## 贡献词典
+<h2 align="center"><a id="贡献词典"></a>贡献词典</h2>
 
 改完跑 `npm run build && npm test`：
 
@@ -99,7 +103,7 @@ $ npm run status
 
 构建会检查重复键与语法，测试含真实语料覆盖率闸门（设置页要求 100%）。
 
-## 已知限制
+<h2 align="center"><a id="已知限制"></a>已知限制</h2>
 
 - 4 词以上的说明性长句仍有未翻译，覆盖率约 70%（AI 对话、欢迎页、主题工作室）
 - 单字中文搜索靠猜：输入「设」只会得到 `Setting`，输入第二个字即正常
@@ -107,7 +111,7 @@ $ npm run status
 - 依赖 Raycast 内部结构：注入点需有 `</body>`，搜索改写依赖 `{ term }` 形态；大版本变更时 `npm test` 会先报错
 - 左下角按钮首次点击无反应是 Raycast 自身行为，与本项目无关
 
-## 卸载
+<h2 align="center"><a id="卸载"></a>卸载</h2>
 
 ```bash
 npm run undeploy
@@ -115,25 +119,27 @@ npm run undeploy
 
 只删除自己写入的内容：HTML 里的标记块、`raycast-zh.js`、`~/.raycast-zh/state.env`。
 
-## 免责声明
+<h2 align="center"><a id="免责声明"></a>免责声明</h2>
 
 本项目修改**已安装 app 的资源文件**，属于非官方手段：不联网、不上传数据、不读剪贴板，逻辑全部在本地 WebView 内；但修改 app bundle 不在 Raycast 支持范围内，出问题请先 `npm run undeploy`，风险自担。
 
-## License
+<h2 align="center"><a id="license"></a>License</h2>
 
-[MIT](LICENSE)
+<p align="center"><a href="LICENSE">MIT</a></p>
 
 ---
 
-<a id="english"></a>
+<h1 align="center"><a id="english"></a>Raycast Chinese (Simplified) Localization</h1>
 
-# Raycast Chinese (Simplified) Localization
+<p align="center"><em>So every ⌘ Space opens in your own language.</em></p>
 
-[简体中文](#raycast-简体中文汉化) ｜ **English**
+<p align="center">
+  <a href="#zh">简体中文</a> ｜ English
+</p>
 
-An unofficial Chinese UI layer for [Raycast](https://raycast.com): no binary patching, no business-logic changes, and Chinese queries still hit the original English index.
+<p align="center">An unofficial Chinese UI layer for <a href="https://raycast.com">Raycast</a>: no binary patching, no business-logic changes, and Chinese queries still hit the original English index.</p>
 
-<table>
+<table align="center">
   <tr>
     <td width="50%"><img src="docs/images/launcher.png" alt="Chinese launcher: typing 剪贴 finds the clipboard command" width="100%"></td>
     <td width="50%" align="center"><img src="docs/images/settings.png" alt="Chinese settings window" width="66%"></td>
@@ -144,9 +150,9 @@ An unofficial Chinese UI layer for [Raycast](https://raycast.com): no binary pat
   </tr>
 </table>
 
-> Unofficial project — see [How it works](#how-it-works).
+<p align="center"><sub>Unofficial project · see <a href="#how-it-works">How it works</a></sub></p>
 
-## Features
+<h2 align="center"><a id="features"></a>Features</h2>
 
 - **Localized UI**: ~4,000 exact-match strings across launcher, settings, sidebar, empty states, and placeholders
 - **Chinese search**: type `设置`, `剪贴`, `专注`, or `截图` to reach the English command
@@ -154,11 +160,11 @@ An unofficial Chinese UI layer for [Raycast](https://raycast.com): no binary pat
 - **Unmatched text stays English**, so file names and your own Quicklink titles are never mangled
 - **One-command rollback**, and one command to restore after a Raycast update
 
-## Requirements
+<h2 align="center"><a id="requirements"></a>Requirements</h2>
 
-macOS · Raycast (tested on 2.8.2.0) · Node.js ≥ 16 (optional if you use the install script)
+<p align="center">macOS · Raycast (tested on 2.8.2.0) · Node.js ≥ 16 (optional if you use the install script)</p>
 
-## Quick start
+<h2 align="center"><a id="quick-start"></a>Quick start</h2>
 
 ```bash
 git clone https://github.com/JaffryGao/raycast-zh.git
@@ -174,7 +180,7 @@ No Node.js? The built artifact is committed:
 
 The script locates Raycast's `frontend/` directory, injects every window page, and restarts Raycast. Try `设置` or `剪贴` in the launcher.
 
-## Commands
+<h2 align="center"><a id="commands"></a>Commands</h2>
 
 | Command | What it does |
 | --- | --- |
@@ -186,7 +192,7 @@ The script locates Raycast's `frontend/` directory, injects every window page, a
 
 `install.sh` / `uninstall.sh` accept `--no-restart`; all three scripts accept `--app <path>`.
 
-## After a Raycast update
+<h2 align="center"><a id="after-a-raycast-update"></a>After a Raycast update</h2>
 
 An update replaces the whole bundle, wiping the injection. Run once afterward:
 
@@ -198,7 +204,7 @@ Not sure? Run `npm run status` — if it reports an in-sync install, you're done
 
 > If auto-update fails because the bundle was modified, reinstall from [raycast.com](https://raycast.com) and run the command again.
 
-## Only half localized?
+<h2 align="center"><a id="only-half-localized"></a>Only half localized?</h2>
 
 Every Raycast window is a **separate HTML document with its own JS entry** (launcher, settings, AI chat, notes…). Injecting only `main-window.html` gives you a Chinese launcher and an English settings window. This version walks `frontend/*.html`, covering future windows automatically.
 
@@ -209,7 +215,7 @@ $ npm run status
 
 If it shows `8/9`, run `npm run deploy` to fill the gaps — no uninstall needed.
 
-## How it works
+<h2 align="center"><a id="how-it-works"></a>How it works</h2>
 
 **1. Render-layer translation**: walks DOM text nodes and `placeholder` / `title` / `aria-label` / `alt` / `data-tooltip`, replacing exact dictionary matches. Inputs, `contentEditable`, `CODE`, and `SVG` are skipped; a `MutationObserver` re-translates nodes React renders later.
 
@@ -219,7 +225,7 @@ If it shows `8/9`, run `npm run deploy` to fill the gaps — no uninstall needed
 
 More reverse-engineering notes (in Chinese): [`docs/technical-notes.md`](docs/technical-notes.md).
 
-## Contributing
+<h2 align="center"><a id="contributing"></a>Contributing</h2>
 
 After editing, run `npm run build && npm test`:
 
@@ -228,7 +234,7 @@ After editing, run `npm run build && npm test`:
 
 The build checks duplicate keys and syntax; tests include a real-corpus coverage gate (100% for the settings page).
 
-## Known limitations
+<h2 align="center"><a id="known-limitations"></a>Known limitations</h2>
 
 - Explanatory strings of 4+ words remain partly untranslated (~70% coverage: AI chat, welcome screen, theme studio)
 - Single-character Chinese search is guesswork: `设` only yields `Setting`; the second character fixes it
@@ -236,7 +242,7 @@ The build checks duplicate keys and syntax; tests include a real-corpus coverage
 - Depends on Raycast internals: pages need `</body>` and search rewriting relies on the `{ term }` shape; `npm test` catches breakage after major updates
 - The bottom-left button ignoring the first click is Raycast's own behavior, unrelated to this project
 
-## Uninstall
+<h2 align="center"><a id="uninstall"></a>Uninstall</h2>
 
 ```bash
 npm run undeploy
@@ -244,10 +250,10 @@ npm run undeploy
 
 Removes only what this project added: the marked HTML block, `raycast-zh.js`, and `~/.raycast-zh/state.env`.
 
-## Disclaimer
+<h2 align="center"><a id="disclaimer"></a>Disclaimer</h2>
 
 This project modifies the **resource files of an installed app**. It makes no network calls, uploads nothing, and never reads the clipboard — all logic runs locally in the WebViews. Modifying an app bundle is outside Raycast's supported surface; run `npm run undeploy` first if anything breaks, and use at your own risk.
 
-## License
+<h2 align="center"><a id="license-1"></a>License</h2>
 
-[MIT](LICENSE)
+<p align="center"><a href="LICENSE">MIT</a></p>
