@@ -29,8 +29,63 @@
     [/^(\d+) selected$/, "已选择 $1 项"],
     [/^(\d+) videos?$/, "$1 个视频"],
     [/^(\d+) notes?$/, "$1 条笔记"],
-    [/^(\d+) chats?$/, "$1 个对话"]
+    [/^(\d+) chats?$/, "$1 个对话"],
+    // 窗口管理 / 虚拟桌面：序号模板句，逐个入词典成本过高且容易随版本失效
+    [/^Move active window to desktop (\d+)\.$/, "将当前窗口移到桌面 $1。"],
+    [/^Switch to desktop (\d+)\.$/, "切换到桌面 $1。"],
   ];
+
+  // 屏幕区域：把「Resize focused window to the <区域> of the screen」整句按区域表展开成规则，
+  // 比逐个写 44 条模板更不容易漏，也不会在语序上拼出别扭的中文
+  var REGION_WORDS = [
+    ["top left quarter", "左上四分之一"],
+    ["top left sixth", "左上六分之一"],
+    ["top right quarter", "右上四分之一"],
+    ["top right sixth", "右上六分之一"],
+    ["top center sixth", "顶部中间六分之一"],
+    ["top center two thirds", "顶部中间三分之二"],
+    ["top first fourth", "顶部前四分之一"],
+    ["top second fourth", "顶部第二四分之一"],
+    ["top third fourth", "顶部第三四分之一"],
+    ["top last fourth", "顶部后四分之一"],
+    ["top half", "上半部分"],
+    ["top third", "顶部三分之一"],
+    ["top two thirds", "顶部三分之二"],
+    ["top three fourths", "顶部四分之三"],
+    ["bottom left quarter", "左下四分之一"],
+    ["bottom left sixth", "左下六分之一"],
+    ["bottom right quarter", "右下四分之一"],
+    ["bottom right sixth", "右下六分之一"],
+    ["bottom center sixth", "底部中间六分之一"],
+    ["bottom center two thirds", "底部中间三分之二"],
+    ["bottom half", "下半部分"],
+    ["bottom third", "底部三分之一"],
+    ["bottom two thirds", "底部三分之二"],
+    ["bottom three fourths", "底部四分之三"],
+    ["center third", "中间三分之一"],
+    ["center two thirds", "中间三分之二"],
+    ["center three fourths", "中间四分之三"],
+    ["first fourth", "前四分之一"],
+    ["first third", "前三分之一"],
+    ["first two thirds", "前三分之二"],
+    ["first three fourths", "前四分之三"],
+    ["second fourth", "第二四分之一"],
+    ["third fourth", "第三四分之一"],
+    ["last fourth", "后四分之一"],
+    ["last third", "后三分之一"],
+    ["last two thirds", "后三分之二"],
+    ["last three fourths", "后四分之三"],
+    ["left half", "左半部分"],
+    ["right half", "右半部分"],
+    ["vertical middle third", "垂直中间三分之一"],
+    ["half", "一半"]
+  ];
+
+  for (var ri = 0; ri < REGION_WORDS.length; ri++) {
+    var en = REGION_WORDS[ri][0], zh = REGION_WORDS[ri][1];
+    RULES.push([new RegExp("^Resize focused window to the " + en + " of the screen\\.$"), "将当前窗口调整为屏幕" + zh + "。"]);
+    RULES.push([new RegExp("^Resize focused window to the " + en + " of the screen and center\\.$"), "将当前窗口调整为屏幕" + zh + "并居中。"]);
+  }
 
   var ATTRS = ["placeholder", "title", "aria-label", "alt", "data-tooltip"];
   var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, CODE: 1, PRE: 1, KBD: 1, SVG: 1, PATH: 1 };

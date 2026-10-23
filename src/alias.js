@@ -209,5 +209,21 @@
     "下载": "Downloads",
     "文稿": "Documents",
     "文件夹": "Folder",
-    "文件": "File"
+    "文件": "File",
+    // 2.9.0 新增功能的中文检索词
+
+    "工作树": "Worktree Cleanup",
+    "工作区": "Workspace",
+    "分支": "Branches",
+    "记忆": "Memory",
+    "定时": "Scheduled",
+    "自动化": "Automations",
+    "语音包": "Voice pack",
+    "小组件": "Widget",
+    "屏幕感知": "Screen Awareness",
+    "外部智能体": "External Agents",
+    "试用": "Trial",
+    "主题工作室": "Theme Studio",
+    "编码": "Coding",
+    "代码审查": "Code Reviewer",
   };

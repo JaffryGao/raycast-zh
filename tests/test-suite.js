@@ -511,7 +511,7 @@ if (enabled("L8")) {
         winMiss.length ? winMiss.length + " 条缺失，例如：" + JSON.stringify(winMiss.slice(0, 3)) : "");
 
       // 全量语料：只做「不低于基线」的防退化检查。
-      // 长句仍有未翻译的（AI 对话、欢迎页等），这里不假装它们已经做完。
+      // 2.9.0 起已补齐；剩余为开发者预览占位文案、文件名与链接，不该进词典。
       const allFiles = fs.readdirSync(FE).filter(f => /\.js$/.test(f)).map(f => path.join(FE, f));
       const allVals = extract(allFiles, 120);
       const allRes = lookupAll(allVals);
@@ -519,7 +519,7 @@ if (enabled("L8")) {
       const cov = (allVals.length - allMiss.length) / Math.max(1, allVals.length);
       const pct = (cov * 100).toFixed(2);
 
-      ok(cov >= 0.68, "全量语料覆盖率不低于基线 68%", pct + "%（" + allMiss.length + "/" + allVals.length + " 未译）");
+      ok(cov >= 0.98, "全量语料覆盖率不低于基线 98%", pct + "%（" + allMiss.length + "/" + allVals.length + " 未译）");
       console.log("      ℹ 全量覆盖率 " + pct + "%（统计口径：title/description/label 等 UI 字段，≤120 字符）");
     }
   }

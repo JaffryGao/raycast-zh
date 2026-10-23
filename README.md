@@ -23,7 +23,7 @@
 
 <h2 align="center">特性</h2>
 
-- **界面汉化**：约 4000 条精确匹配文案，覆盖启动器、设置、侧栏、空状态与占位符
+- **界面汉化**：约 5500 条精确匹配文案，覆盖启动器、设置、侧栏、空状态与占位符
 - **中文搜索**：输入「设置 / 剪贴 / 专注 / 截图」，命中对应的英文命令
 - **零侵入**：只在各窗口 HTML 末尾加一段 `<script>`，不改任何 JS chunk 与二进制
 - **未命中即原样**：不认识的文本保持英文，不会破坏文件名或你的 Quicklink 标题
@@ -31,7 +31,7 @@
 
 <h2 align="center">环境要求</h2>
 
-<p align="center">macOS · Raycast（实测 2.8.2.0）· Node.js ≥ 16（可选，只用安装脚本则不需要）</p>
+<p align="center">macOS · Raycast（实测 2.9.0.0）· Node.js ≥ 16（可选，只用安装脚本则不需要）</p>
 
 <h2 align="center">快速开始</h2>
 
@@ -56,7 +56,7 @@ npm run deploy
 | `npm run deploy` | 安装 / 更新 |
 | `npm run undeploy` | 完全卸载，恢复原样 |
 | `npm run status` | 体检：注入覆盖、版本同步、是否被升级覆盖 |
-| `npm test` | 分层测试（128 条断言） |
+| `npm test` | 分层测试（128 条断言，含真实语料覆盖率闸门） |
 | `npm run build` | 改完词典后重建 `dist/` |
 
 `install.sh` / `uninstall.sh` 支持 `--no-restart`；三个脚本都支持 `--app <路径>`。
@@ -105,7 +105,7 @@ $ npm run status
 
 <h2 align="center">已知限制</h2>
 
-- 4 词以上的说明性长句仍有未翻译，覆盖率约 70%（AI 对话、欢迎页、主题工作室）
+- 全量 UI 语料覆盖约 99%，剩余为开发者预览用的占位文案、文件名与链接
 - 单字中文搜索靠猜：输入「设」只会得到 `Setting`，输入第二个字即正常
 - 词典完全没有的中文词不做改写，结果为空而非乱译
 - 依赖 Raycast 内部结构：注入点需有 `</body>`，搜索改写依赖 `{ term }` 形态；大版本变更时 `npm test` 会先报错
@@ -154,7 +154,7 @@ npm run undeploy
 
 <h2 align="center">Features</h2>
 
-- **Localized UI**: ~4,000 exact-match strings across launcher, settings, sidebar, empty states, and placeholders
+- **Localized UI**: ~5,500 exact-match strings across launcher, settings, sidebar, empty states, and placeholders
 - **Chinese search**: type `设置`, `剪贴`, `专注`, or `截图` to reach the English command
 - **Non-invasive**: one `<script>` per window HTML; no JS chunk or binary is touched
 - **Unmatched text stays English**, so file names and your own Quicklink titles are never mangled
@@ -162,7 +162,7 @@ npm run undeploy
 
 <h2 align="center">Requirements</h2>
 
-<p align="center">macOS · Raycast (tested on 2.8.2.0) · Node.js ≥ 16 (optional if you use the install script)</p>
+<p align="center">macOS · Raycast (tested on 2.9.0.0) · Node.js ≥ 16 (optional if you use the install script)</p>
 
 <h2 align="center">Quick start</h2>
 
@@ -236,7 +236,7 @@ The build checks duplicate keys and syntax; tests include a real-corpus coverage
 
 <h2 align="center">Known limitations</h2>
 
-- Explanatory strings of 4+ words remain partly untranslated (~70% coverage: AI chat, welcome screen, theme studio)
+- Full UI corpus coverage is ~99%; the remainder is developer preview placeholders, file names, and URLs
 - Single-character Chinese search is guesswork: `设` only yields `Setting`; the second character fixes it
 - Unknown Chinese words are left untouched — empty results rather than a wrong translation
 - Depends on Raycast internals: pages need `</body>` and search rewriting relies on the `{ term }` shape; `npm test` catches breakage after major updates
