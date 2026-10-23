@@ -21,6 +21,14 @@
 
 <p align="center"><sub>非官方项目 · 原理见 <a href="#实现原理">实现原理</a></sub></p>
 
+<h2 align="center">交给 AI 安装</h2>
+
+<p align="center">不想自己敲命令？把下面这句话原样发给任意 AI Agent（Codex、Claude Code、Cursor…），它会帮你装好并验证。</p>
+
+```
+帮我安装 https://github.com/JaffryGao/raycast-zh 这个 Raycast 简体中文汉化：把仓库克隆到本地，运行 npm run deploy（没有 Node.js 就改用 ./scripts/install.sh），装完跑 npm run status 确认所有窗口都已注入，再把结果告诉我。
+```
+
 <h2 align="center">特性</h2>
 
 - **界面汉化**：约 5500 条精确匹配文案，覆盖启动器、设置、侧栏、空状态与占位符
@@ -151,6 +159,14 @@ npm run undeploy
 </table>
 
 <p align="center"><sub>Unofficial project · see <a href="#how-it-works">How it works</a></sub></p>
+
+<h2 align="center">Let an AI install it</h2>
+
+<p align="center">Don't want to run the commands yourself? Paste this sentence to any AI agent (Codex, Claude Code, Cursor…); it will install and verify it for you.</p>
+
+```
+Install the Raycast Chinese localization from https://github.com/JaffryGao/raycast-zh: clone the repo, run npm run deploy (or ./scripts/install.sh if Node.js isn't available), then run npm run status to confirm every window is injected, and report the result back to me.
+```
 
 <h2 align="center">Features</h2>
 
